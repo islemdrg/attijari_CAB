@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ ticket['Clé de ticket'] }} — Attijari Bank CAB Quality
+{% endblock %}
+
+{% block content %}
+
+<!-- ========================================================= -->
+<!-- MESSAGES FLASH -->
+<!-- ========================================================= -->
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="panel" style="padding:14px 22px;">
+    {% for category, message in messages %}
+    <div class="status-badge {{ 'status-danger' if category == 'error' else 'status-success' }}" style="margin-bottom:6px;">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<!-- ========================================================= -->
+<!-- EN-TETE : ticket / score global / niveau / statut -->
+<!-- ========================================================= -->
+
+<div class="kpi-grid">
+
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Ticket</span>
+            <div class="kpi-icon">▤</div>
+        </div>
+        <div class="kpi-value" style="font-size:22px;">{{ ticket['Clé de ticket'] }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Score global</span>
+            <div class="kpi-icon">◈</div>
+        </div>
+        <div class="kpi-value">
+            <span class="score-pill {{ ticket['score_class'] }}">
+                {{ number(ticket.get('score_qualite_global')) }}/100
+            </span>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Niveau</span>
+            <div class="kpi-icon">★</div>
+        </div>
+        <div class="kpi-value" style="font-size:20px;">{{ ticket['niveau_qualite'] }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Statut</span>
+            <div class="kpi-icon">✓</div>
+        </div>
+        <div class="kpi-value" style="font-size:16px;">
+            <span class="status-badge {{ ticket['status_class'] }}">{{ ticket['statut_evaluation'] }}</span>
+        </div>
+    </div>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- RESUME -->
+<!-- ========================================================= -->
+
+<div class="detail-card" style="margin-top:20px; padding:14px 18px;">
+    <div class="detail-title" style="margin-bottom:4px;">Résumé</div>
+    <div class="detail-text" style="line-height:1.5;">
+        {{ ticket.get('Résumé') or '—' }}
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- DESCRIPTION COMPLETE (quand elle existe) -->
+<!-- ========================================================= -->
+
+{% if ticket.get('Description') %}
+<div class="detail-card" style="margin-top:16px;">
+    <div class="detail-title">Description</div>
+    <div class="detail-text">{{ ticket['Description'] }}</div>
+</div>
+{% endif %}
+
+<!-- ========================================================= -->
+<!-- IMPACT COMPLET (quand il existe) -->
+<!-- ========================================================= -->
+
+{% if ticket.get("Impact de l'action") %}
+<div class="detail-card" style="margin-top:16px;">
+    <div class="detail-title">Impact</div>
+    <div class="detail-text">{{ ticket["Impact de l'action"] }}</div>
+</div>
+{% endif %}
+
+<!-- ========================================================= -->
+<!-- ANALYSE -->
+<!-- ========================================================= -->
+
+<div class="detail-card" style="margin-top:16px;">
+    <div class="detail-title">Analyse</div>
+    <div class="detail-text">{{ ticket.get('analyse') or 'Analyse non disponible pour ce ticket.' }}</div>
+</div>
+
+<!-- ========================================================= -->
+<!-- SCORES PAR CRITERE -->
+<!-- ========================================================= -->
+
+<div class="panel" style="margin-top:20px;">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">Détail du score /100</h2>
+            <div class="panel-subtitle">Répartition par catégorie</div>
+        </div>
+    </div>
+
+    <div style="padding:20px 22px;">
+        <div class="score-grid">
+
+            <div class="score-card">
+                <div class="score-card-label">Complétude</div>
+                <div class="score-card-value">{{ number(ticket.get('score_completude')) }}</div>
+            </div>
+
+            <div class="score-card">
+                <div class="score-card-label">Format /15</div>
+                <div class="score-card-value">{{ number(ticket.get('score_format')) }}</div>
+            </div>
+
+            <div class="score-card">
+                <div class="score-card-label">Pertinence /25</div>
+                <div class="score-card-value">{{ number(ticket.get('score_pertinence')) }}</div>
+            </div>
+
+            <div class="score-card">
+                <div class="score-card-label">Impact /15</div>
+                <div class="score-card-value">{{ number(ticket.get('score_impact')) }}</div>
+            </div>
+
+            <div class="score-card">
+                <div class="score-card-label">Cohérence /20</div>
+                <div class="score-card-value">{{ number(ticket.get('score_coherence')) }}</div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- EXPLICATIONS (avec barème en points) -->
+<!-- ========================================================= -->
+
+<div class="detail-grid" style="margin-top:20px;">
+
+    <div class="detail-card">
+        <div class="detail-title">Explications</div>
+        <ul class="evidence-list">
+            <li><strong>Complétude : </strong>{{ ticket.get('explication_completude') }}</li>
+            <li style="margin-top:10px;"><strong>Format : </strong>{{ ticket.get('explication_format') }}</li>
+            <li style="margin-top:10px;"><strong>Pertinence : </strong>{{ ticket.get('explication_description') }}</li>
+            <li style="margin-top:10px;"><strong>Impact : </strong>{{ ticket.get('explication_impact') }}</li>
+            <li style="margin-top:10px;"><strong>Cohérence : </strong>{{ ticket.get('explication_coherence') }}</li>
+        </ul>
+    </div>
+
+    <div class="detail-card">
+        <div class="detail-title">Recommandations</div>
+        <ul class="recommendation-list">
+            {% for rec in ticket.get('recommandations', []) %}
+            <li>{{ rec }}</li>
+            {% else %}
+            <li>Aucune recommandation pour ce ticket.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- PREUVES -->
+<!-- ========================================================= -->
+
+<div class="detail-card" style="margin-top:20px;">
+    <div class="detail-title">Preuves</div>
+    <ul class="evidence-list">
+        {% for proof in ticket.get('preuves', []) %}
+        <li>{{ proof }}</li>
+        {% else %}
+        <li>Aucune preuve disponible pour ce ticket.</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<!-- ========================================================= -->
+<!-- BASE D'EVALUATION (barème fixe, pour comprendre "à quelle base -->
+<!-- c'est évalué" — identique pour tous les tickets) -->
+<!-- ========================================================= -->
+
+<div class="panel" style="margin-top:20px;">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">Base d'évaluation de la Pertinence (/25)</h2>
+            <div class="panel-subtitle">Barème appliqué à tous les tickets, par le LLM ou l'analyseur heuristique</div>
+        </div>
+    </div>
+    <div style="padding:20px 22px;">
+        <ul class="evidence-list">
+            <li><strong>Contexte (+5 pts) :</strong> le problème ou besoin à l'origine du changement est réellement expliqué (pas juste un mot-clé).</li>
+            <li style="margin-top:8px;"><strong>Objectif (+5 pts) :</strong> ce que le changement cherche à obtenir est clairement identifiable.</li>
+            <li style="margin-top:8px;"><strong>Action (+7 pts) :</strong> l'action technique/fonctionnelle est décrite assez précisément pour comprendre ce qui va être modifié.</li>
+            <li style="margin-top:8px;"><strong>Informations concrètes (+4 pts) :</strong> applications, versions, composants, flux, environnement... sont mentionnés.</li>
+            <li style="margin-top:8px;"><strong>Validation / rollback (+4 pts) :</strong> un test, une validation ou un plan de retour arrière est décrit.</li>
+        </ul>
+        <div class="detail-text" style="margin-top:14px;">
+            Une information vague ou un champ simplement rempli ne suffit pas : chaque critère doit être réellement
+            satisfait par le contenu, indépendamment des autres. C'est pourquoi une description courte ou générique
+            obtient une pertinence faible même si le champ n'est pas vide.
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- SOUS-TACHES (si présentes) -->
+<!-- ========================================================= -->
+
+{% if ticket.get('sous_taches') %}
+<div class="panel" style="margin-top:20px;">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">Sous-tâches ({{ ticket['sous_taches']|length }})</h2>
+            <div class="panel-subtitle">Tickets de vote/exécution rattachés à ce changement</div>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Clé</th>
+                    <th>Résumé</th>
+                    <th>État</th>
+                    <th>Assigné</th>
+                    <th>Priorité</th>
+                    <th>Mise à jour</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for st in ticket['sous_taches'] %}
+                <tr>
+                    <td><a href="{{ url_for('ticket_detail', ticket_id=st['key']) }}" class="ticket-link">{{ st['key'] }}</a></td>
+                    <td>{{ st['summary'] }}</td>
+                    <td><span class="status-badge {{ st['etat_class'] }}">{{ st['etat'] }}</span></td>
+                    <td>{{ st['assignee'] }}</td>
+                    <td>{{ st['priorite'] }}</td>
+                    <td>{{ st['updated'][:10] if st['updated'] else '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- ========================================================= -->
+<!-- ACTIONS -->
+<!-- ========================================================= -->
+
+<div style="margin-top:20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+    <a href="{{ url_for('dashboard') }}" class="back-link">← Retour au portefeuille</a>
+
+    <a href="{{ url_for('export_ticket_pdf', ticket_id=ticket['Clé de ticket']) }}"
+       class="btn"
+       style="display:inline-flex; align-items:center; justify-content:center; text-decoration:none; line-height:normal;">
+        Exporter en PDF
+    </a>
+
+    {% if ticket.get('erreur_llm') and ticket.get('methode_analyse') != 'llm' %}
+    <form method="post" action="{{ url_for('reanalyser_ticket', ticket_id=ticket['Clé de ticket']) }}" style="display:inline-block;">
+        <button type="submit" class="btn">Réanalyser ce ticket</button>
+    </form>
+    {% endif %}
+</div>
+
+{% endblock %}

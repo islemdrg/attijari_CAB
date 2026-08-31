@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}Attijari Bank — CAB Quality{% endblock %}
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/attijari.css') }}"
+    >
+</head>
+
+<body>
+
+    <div class="app-shell">
+
+        <aside class="sidebar">
+
+            <div class="brand">
+                <img
+                    class="brand-logo-image"
+                    src="{{ url_for('static', filename='images/Logo_Attijari_bank.png') }}"
+                    alt="Attijari Bank Logo"
+                >
+
+                <div class="brand-product">
+                    CAB Quality
+                    <span>Change Management</span>
+                </div>
+            </div>
+
+            <div class="sidebar-divider"></div>
+
+            <div class="nav-section">
+                PILOTAGE CAB
+            </div>
+
+            <a
+                href="{{ url_for('dashboard') }}"
+                class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}"
+            >
+                <span class="nav-icon">▦</span>
+                <span>Evaluation Tickets</span>
+            </a>
+            <a href="{{ url_for('sous_taches') }}" class="nav-item {% if request.endpoint == 'sous_taches' %}active{% endif %}">
+                <span class="nav-icon">☰</span>
+                <span>Sous-tâches</span>
+            </a>
+            <a href="{{ url_for('calendrier') }}" class="nav-item {% if request.endpoint == 'calendrier' %}active{% endif %}">
+                <span class="nav-icon">📅</span>
+                <span>Calendrier échéances</span>
+            </a>
+
+            <a
+                href="{{ url_for('dashboard', status='DESCRIPTION_ABSENTE') }}"
+                class="nav-item"
+            >
+                <span class="nav-icon">!</span>
+                <span>Tickets à corriger</span>
+            </a>
+
+            <a
+                href="{{ url_for('dashboard', status='ANCIENNE_REFERENCE') }}"
+                class="nav-item"
+            >
+                <span class="nav-icon">⌁</span>
+                <span>Hors périmètre</span>
+            </a>
+
+            <div class="nav-section">
+                QUALITÉ
+            </div>
+
+            <a
+                href="{{ url_for('dashboard', level='Excellent') }}"
+                class="nav-item"
+            >
+                <span class="nav-icon">★</span>
+                <span>Qualité excellente</span>
+            </a>
+
+            <a
+                href="{{ url_for('dashboard', level='Faible') }}"
+                class="nav-item"
+            >
+                <span class="nav-icon">↓</span>
+                <span>Qualité faible</span>
+            </a>
+
+            <div class="sidebar-bottom">
+                <div class="security-card">
+                    <div class="security-dot"></div>
+
+                    <div>
+                        <strong>Environnement interne</strong>
+                        <span>Analyse CAB sécurisée</span>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div>
+                    <div class="breadcrumb">
+                        Attijari Bank Tunisie / Change Management
+                    </div>
+
+                    <h1>
+                        {% block page_title %}
+                        CAB Quality Dashboard
+                        {% endblock %}
+                    </h1>
+                </div>
+
+                <div class="topbar-right">
+
+                    <div class="live-indicator">
+                        <span></span>
+                        Synchronisation Jira
+                    </div>
+
+                    <div
+                        class="user-avatar"
+                        title="Utilisateur CAB"
+                    >
+                        CAB
+                    </div>
+
+                </div>
+
+            </header>
+
+            <div class="content-container">
+                {% block content %}{% endblock %}
+            </div>
+
+        </main>
+
+    </div>
+
+</body>
+</html>

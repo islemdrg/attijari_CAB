@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}
+Attijari Bank — Sous-tâches CAB
+{% endblock %}
+
+{% block page_title %}
+Portefeuille des sous-tâches
+{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="panel" style="padding:14px 22px;">
+    {% for category, message in messages %}
+    <div class="status-badge {{ 'status-danger' if category == 'error' else 'status-success' }}" style="margin-bottom:6px;">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">Sous-tâches regroupées par ticket parent</h2>
+            <div class="panel-subtitle">
+                {{ total_parents }} ticket(s) parent, {{ total_results }} sous-tâche(s) au total
+            </div>
+        </div>
+        <form method="post" action="{{ url_for('refresh_subtasks') }}" style="display:inline-block; margin-bottom:12px;">
+            <button type="submit" class="btn">Actualiser les sous-tâches depuis Jira</button>
+        </form>
+
+        <form method="get" class="filters">
+            <input
+                class="input"
+                type="text"
+                name="search"
+                value="{{ search }}"
+                placeholder="Clé, résumé ou ticket parent..."
+            >
+
+            <select class="select" name="etat">
+                <option value="">Tous les états</option>
+                {% for item in etats %}
+                <option value="{{ item }}" {% if etat == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn">Filtrer</button>
+        </form>
+    </div>
+
+    {% for group in groups %}
+    <div class="detail-card" style="margin:16px 22px;">
+        <div class="detail-title">
+            {% if group.parent_key != "Sans parent" %}
+            <a href="{{ url_for('ticket_detail', ticket_id=group.parent_key) }}" class="ticket-link">
+                {{ group.parent_key }}
+            </a>
+            {% else %}
+            Sans ticket parent
+            {% endif %}
+            — {{ group.parent_summary }}
+        </div>
+
+        <div class="table-wrapper" style="margin-top:10px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Clé</th>
+                        <th>Résumé</th>
+                        <th>État</th>
+                        <th>Assigné</th>
+                        <th>Priorité</th>
+                        <th>Mise à jour</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for st in group.subtasks %}
+                    <tr>
+                        <td>{{ st.key }}</td>
+                        <td>{{ st.summary }}</td>
+                        <td><span class="status-badge {{ st.etat_class }}">{{ st.etat }}</span></td>
+                        <td>{{ st.assignee }}</td>
+                        <td>{{ st.priorite }}</td>
+                        <td>{{ st.updated or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div style="padding:50px; text-align:center;">
+        Aucune sous-tâche ne correspond aux filtres.
+    </div>
+    {% endfor %}
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        <div class="pagination-info">
+            Groupes {{ page_start }} à {{ page_end }} sur {{ total_parents }}
+        </div>
+
+        <div class="pagination-actions">
+            {% if page > 1 %}
+            <a class="pagination-btn" href="{{ url_for('sous_taches', search=search, etat=etat, page=page - 1) }}">← Précédent</a>
+            {% else %}
+            <span class="pagination-btn disabled">← Précédent</span>
+            {% endif %}
+
+            <form method="get" class="pagination-jump">
+                <span>Page</span>
+                <input
+                    type="number"
+                    name="page"
+                    min="1"
+                    max="{{ total_pages }}"
+                    value="{{ page }}"
+                    class="pagination-input"
+                    onchange="this.form.submit()"
+                >
+                <span>/ {{ total_pages }}</span>
+
+                <input type="hidden" name="search" value="{{ search }}">
+                <input type="hidden" name="etat" value="{{ etat }}">
+
+                <button type="submit" class="pagination-go-btn">Aller</button>
+            </form>
+
+            {% if page < total_pages %}
+            <a class="pagination-btn" href="{{ url_for('sous_taches', search=search, etat=etat, page=page + 1) }}">Suivant →</a>
+            {% else %}
+            <span class="pagination-btn disabled">Suivant →</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

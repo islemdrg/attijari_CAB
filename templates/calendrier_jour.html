@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}
+Attijari Bank — Échéances du {{ jour }}/{{ mois }}/{{ annee }}
+{% endblock %}
+
+{% block page_title %}
+Échéances du {{ '%02d'|format(jour) }}/{{ '%02d'|format(mois) }}/{{ annee }}
+{% endblock %}
+
+{% block content %}
+
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">{{ echeances|length }} échéance(s) ce jour</h2>
+            <div class="panel-subtitle">Limite de validation calculée vs date de validation réelle constatée</div>
+        </div>
+        <a href="{{ url_for('calendrier', annee=annee, mois=mois) }}#calendrier-panel" class="back-link">← Retour au calendrier</a>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Résumé</th>
+                    <th>Type</th>
+                    <th>Limite de validation</th>
+                    <th>Date de validation réelle</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in echeances %}
+                <tr>
+                    <td><a href="{{ url_for('ticket_detail', ticket_id=e.key) }}" class="ticket-link">{{ e.key }}</a></td>
+                    <td>{{ e.summary }}</td>
+                    <td>{{ e.type_changement }}</td>
+                    <td>{{ e.echeance_prevue.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>
+                        {% if e.date_validation %}
+                            {{ e.date_validation.strftime('%d/%m/%Y %H:%M') }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td><span class="status-badge {% if e.statut == 'echu' %}status-danger{% elif e.statut == 'valide_a_temps' %}status-success{% elif e.statut == 'valide_en_retard' %}status-warning{% else %}status-neutral{% endif %}">{{ e.statut }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center; padding:40px;">Aucune échéance ce jour.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

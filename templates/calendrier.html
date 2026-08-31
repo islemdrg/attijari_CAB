@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}
+Attijari Bank — Calendrier des échéances
+{% endblock %}
+
+{% block page_title %}
+Calendrier des échéances de validation
+{% endblock %}
+
+{% block content %}
+
+<div class="panel" style="margin-bottom:20px; padding: 14px 22px;">
+    <div class="detail-text" style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+        <span style="font-weight:600; color:var(--text);">Délai de validation appliqué :</span>
+        <span><span class="status-badge status-danger" style="margin-right:6px;">Urgent</span>48h après la Date de CAB</span>
+        <span><span class="status-badge status-warning" style="margin-right:6px;">Standard / Normal</span>72h après la Date de CAB</span>
+    </div>
+</div>
+
+{% if echues_par_annee %}
+<div class="panel" style="margin-bottom:20px; border-left: 3px solid var(--danger, #c8102e);">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">⚠ Échéances dépassées, non validées</h2>
+            <div class="panel-subtitle">Regroupées par année — cliquez pour afficher le détail</div>
+        </div>
+    </div>
+
+    <div style="padding: 10px 22px 20px;">
+        {% for annee_echue, liste in echues_par_annee.items() %}
+        <details class="echues-year-group" {% if loop.first %}open{% endif %}>
+            <summary class="echues-year-summary">
+                <span class="echues-year-label">{{ annee_echue }}</span>
+                <span class="status-badge status-danger">{{ liste|length }} échéance(s) dépassée(s)</span>
+            </summary>
+
+            <div class="table-wrapper" style="margin-top:12px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Résumé</th>
+                            <th>Type</th>
+                            <th>Date de CAB</th>
+                            <th>Limite de validation</th>
+                            <th>Date de validation réelle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in liste %}
+                        <tr>
+                            <td><a href="{{ url_for('ticket_detail', ticket_id=e.key) }}" class="ticket-link">{{ e.key }}</a></td>
+                            <td>{{ e.summary }}</td>
+                            <td>{{ e.type_changement }}</td>
+                            <td>{{ e.date_cab.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>{{ e.echeance_prevue.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                {% if e.date_validation %}
+                                    {{ e.date_validation.strftime('%d/%m/%Y %H:%M') }}
+                                {% else %}
+                                    <span class="status-badge status-danger">Non validé</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% if sans_validation_par_annee %}
+<div class="panel" style="margin-bottom:20px; border-left: 3px solid var(--warning, #9b6800);">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">⏳ En attente de validation (délai non dépassé)</h2>
+            <div class="panel-subtitle">Aucune Date de validation renseignée à ce jour — regroupées par année, pour anticiper avant l'échéance</div>
+        </div>
+    </div>
+
+    <div style="padding: 10px 22px 20px;">
+        {% for annee_attente, liste in sans_validation_par_annee.items() %}
+        <details class="echues-year-group" {% if loop.first %}open{% endif %}>
+            <summary class="echues-year-summary">
+                <span class="echues-year-label">{{ annee_attente }}</span>
+                <span class="status-badge status-warning">{{ liste|length }} ticket(s) en attente</span>
+            </summary>
+
+            <div class="table-wrapper" style="margin-top:12px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Résumé</th>
+                            <th>Type</th>
+                            <th>Date de CAB</th>
+                            <th>Limite de validation</th>
+                            <th>État Jira</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in liste %}
+                        <tr>
+                            <td><a href="{{ url_for('ticket_detail', ticket_id=e.key) }}" class="ticket-link">{{ e.key }}</a></td>
+                            <td>{{ e.summary }}</td>
+                            <td>{{ e.type_changement }}</td>
+                            <td>{{ e.date_cab.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>{{ e.echeance_prevue.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td><span class="status-badge status-warning">{{ e.etat_jira }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+<div class="panel" id="calendrier-panel">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">{{ nom_mois }} {{ annee }}</h2>
+            <div class="panel-subtitle">Limites de validation calculées (Date de CAB + délai selon le type de changement) — pas les dates de validation réelles</div>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <a class="pagination-btn" href="{{ url_for('calendrier', annee=annee_mois_precedent, mois=mois_precedent) }}#calendrier-panel">← Mois précédent</a>
+            <a class="pagination-btn" href="{{ url_for('calendrier', annee=annee_mois_suivant, mois=mois_suivant) }}#calendrier-panel">Mois suivant →</a>
+        </div>
+    </div>
+
+    <div style="padding:20px 22px;">
+        <div class="calendar-grid">
+            <div class="calendar-weekday">Lun</div>
+            <div class="calendar-weekday">Mar</div>
+            <div class="calendar-weekday">Mer</div>
+            <div class="calendar-weekday">Jeu</div>
+            <div class="calendar-weekday">Ven</div>
+            <div class="calendar-weekday">Sam</div>
+            <div class="calendar-weekday">Dim</div>
+
+            {% for semaine in semaines %}
+                {% for jour in semaine %}
+                    {% if jour == 0 %}
+<div class="calendar-cell calendar-cell-empty"></div>
+{% else %}
+<div class="calendar-cell {% if jour == aujourd_hui %}calendar-cell-today{% endif %}">
+
+    {% if jour in echeances_par_jour %}
+    <a href="{{ url_for('calendrier_jour', annee=annee, mois=mois, jour=jour) }}" class="calendar-cell-number calendar-cell-number-link">
+        {{ jour }}
+    </a>
+    {% else %}
+    <div class="calendar-cell-number">{{ jour }}</div>
+    {% endif %}
+
+    {% if jour in echeances_par_jour %}
+    <div class="calendar-cell-events">
+        {% for e in echeances_par_jour[jour][:3] %}
+        <a href="{{ url_for('ticket_detail', ticket_id=e.key) }}"
+        class="calendar-event calendar-event-{{ e.statut }}"
+        title="{{ e.key }} — {{ e.summary }} | Limite : {{ e.echeance_prevue.strftime('%d/%m %H:%M') }}{% if e.date_validation %} | Validé le : {{ e.date_validation.strftime('%d/%m %H:%M') }}{% else %} | Pas encore validé{% endif %}">
+            {{ e.key }}
+        </a>
+        {% endfor %}
+        {% if echeances_par_jour[jour]|length > 3 %}
+        <a href="{{ url_for('calendrier_jour', annee=annee, mois=mois, jour=jour) }}"
+        class="calendar-event-more calendar-event-more-link">
+            +{{ echeances_par_jour[jour]|length - 3 }} autre(s)
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+
+        <div style="margin-top:16px; display:flex; gap:20px; font-size:13px; flex-wrap:wrap;">
+            <div><span class="calendar-legend-dot calendar-event-a_venir"></span> À venir</div>
+            <div><span class="calendar-legend-dot calendar-event-echu"></span> Échu (en attente, délai dépassé)</div>
+            <div><span class="calendar-legend-dot calendar-event-valide_a_temps"></span> Validé à temps</div>
+            <div><span class="calendar-legend-dot calendar-event-valide_en_retard"></span> Validé en retard</div>
+            <div><span class="calendar-legend-dot calendar-event-clos_sans_date"></span> Clos sans date de validation</div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

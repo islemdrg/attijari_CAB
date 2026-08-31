@@ -1,0 +1,530 @@
+{% extends "base.html" %}
+
+{% block title %}
+Attijari Bank Tunisie — CAB Quality Dashboard
+{% endblock %}
+
+{% block page_title %}
+Pilotage de la qualité CAB
+{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="panel" style="padding:14px 22px;">
+    {% for category, message in messages %}
+    <div
+        class="status-badge {{ 'status-danger' if category == 'error' else 'status-success' }}"
+    >
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<div
+    class="panel"
+    style="padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;"
+>
+    <div>
+        <div class="panel-title">
+            Synchronisation du portefeuille Jira
+        </div>
+
+        <div
+            id="sync-status"
+            class="panel-subtitle"
+        >
+            Le portefeuille est noté à partir de l'instantané Jira.
+        </div>
+    </div>
+    
+    <form method="post" action="{{ url_for('refresh') }}">
+        <button type="submit" class="btn" id="sync-btn">
+            Synchroniser avec Jira
+        </button>
+    </form>
+    <form method="post" action="{{ url_for('refresh_force_all') }}" style="display:inline-block; margin-left:10px;">
+    <button type="submit" class="btn" style="background:#9a6b00;">
+        Rattrapage complet (re-noter tout le portefeuille)
+    </button>
+    </form>
+</div>
+
+<script>
+(function () {
+    const statusEl = document.getElementById("sync-status");
+    const btnEl = document.getElementById("sync-btn");
+    let wasRunning = false;
+
+    function poll() {
+        fetch("{{ url_for('refresh_status') }}")
+            .then(response => response.json())
+            .then(data => {
+                if (data.running) {
+                    wasRunning = true;
+                    btnEl.disabled = true;
+                    btnEl.textContent = "Synchronisation en cours...";
+                    statusEl.textContent =
+                        data.step ||
+                        "Extraction Jira et évaluation des tickets en cours...";
+
+                    setTimeout(poll, 3000);
+                    return;
+                }
+
+                btnEl.disabled = false;
+                btnEl.textContent = "Synchroniser avec Jira";
+
+                if (data.error) {
+                    statusEl.textContent =
+                        "Erreur lors de la dernière synchronisation : " +
+                        data.error;
+                } else if (data.message) {
+                    statusEl.textContent = data.message;
+                }
+
+                if (wasRunning) {
+                    window.location.reload();
+                }
+            })
+            .catch(() => {});
+    }
+
+    poll();
+})();
+</script>
+
+<div class="kpi-grid">
+
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Tickets évalués</span>
+            <div class="kpi-icon">✓</div>
+        </div>
+
+        <div class="kpi-value">
+            {{ total_tickets }}
+        </div>
+
+        <div class="kpi-footer">
+            Portefeuille CAB analysé
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Score moyen</span>
+            <div class="kpi-icon">◈</div>
+        </div>
+
+        <div class="kpi-value">
+            {{ avg_score }}
+            <small>/100</small>
+        </div>
+
+        <div class="kpi-footer">
+            Tickets inclus dans l'évaluation
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Qualité excellente</span>
+            <div class="kpi-icon">★</div>
+        </div>
+
+        <div class="kpi-value">
+            {{ excellent }}
+        </div>
+
+        <div class="kpi-footer">
+            Score supérieur ou égal à 80
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Tickets faibles</span>
+            <div class="kpi-icon">!</div>
+        </div>
+
+        <div class="kpi-value">
+            {{ weak }}
+        </div>
+
+        <div class="kpi-footer">
+            Score inférieur à 40
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Hors périmètre</span>
+            <div class="kpi-icon">—</div>
+        </div>
+
+        <div class="kpi-value">
+            {{ hors_perimetre }}
+        </div>
+
+        <div class="kpi-footer">
+            Anciennes références non évaluées
+        </div>
+    </div>
+
+</div>
+
+<div class="panel">
+
+    <div class="panel-header">
+
+        <div>
+            <h2 class="panel-title">
+                Portefeuille des tickets CAB
+            </h2>
+
+            <div class="panel-subtitle">
+                Recherche et filtrage des évaluations disponibles
+            </div>
+            
+        </div>
+
+        <form method="get" class="filters">
+            <input type="hidden" name="page" value="1">
+
+            <input
+                class="input"
+                type="text"
+                name="search"
+                value="{{ search }}"
+                placeholder="Ticket ou résumé..."
+            >
+
+            <select class="select" name="level">
+                <option value="">Tous les niveaux</option>
+
+                {% for item in levels %}
+                <option
+                    value="{{ item }}"
+                    {% if level == item %}selected{% endif %}
+                >
+                    {{ item }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <select class="select" name="status">
+                <option value="">Tous les statuts</option>
+
+                {% for item in statuses %}
+                <option
+                    value="{{ item }}"
+                    {% if status == item %}selected{% endif %}
+                >
+                    {{ item }}
+                </option>
+                {% endfor %}
+            </select>
+            <select class="select" name="etat">
+                <option value="">Tous les états Jira</option>
+
+                {% for item in etats %}
+                <option
+                    value="{{ item }}"
+                    {% if etat == item %}selected{% endif %}
+                >
+                    {{ item }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <select class="select" name="year">
+                <option value="">Toutes les années</option>
+
+                <option
+                    value="__none__"
+                    {% if year == "__none__" %}selected{% endif %}
+                >
+                    Sans date de CAB
+                </option>
+
+                {% for item in years %}
+                <option
+                    value="{{ item }}"
+                    {% if year == item %}selected{% endif %}
+                >
+                    {{ item }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn">
+                Filtrer
+            </button>
+
+        </form>
+        
+
+    </div>
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Résumé</th>
+                    <th>État Jira</th>
+                    <th>Score</th>
+                    <th>Complétude</th>
+                    <th>Format</th>
+                    <th>Pertinence</th>
+                    <th>Impact</th>
+                    <th>Cohérence</th>
+                    <th>Évaluation</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for row in rows %}
+                <tr>
+
+                    <td>
+                        <a
+                            href="{{ url_for('ticket_detail', ticket_id=row.key) }}"
+                            class="ticket-link"
+                        >
+                            {{ row.key }}
+                        </a>
+                    </td>
+
+                    <td>
+                        <div class="summary">
+                            {{ row.summary }}
+                        </div>
+                    </td>
+
+                    <td>
+                        <span class="status-badge {{ row.etat_class }}">
+                            {{ row.etat }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="score-pill {{ row.score_class }}">
+                            {% if row.status == "ANCIENNE_REFERENCE" %}
+                                —
+                            {% else %}
+                                {{ row.score }}/100
+                            {% endif %}
+                        </span>
+                    </td>
+
+                    <td>
+                        {% if row.status == "ANCIENNE_REFERENCE" %}
+                            —
+                        {% else %}
+                            {{ row.completude }}
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if row.status == "ANCIENNE_REFERENCE" %}
+                            —
+                        {% else %}
+                            {{ row.format }}/15
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if row.status == "ANCIENNE_REFERENCE" %}
+                            —
+                        {% else %}
+                            {{ row.pertinence }}/25
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if row.status == "ANCIENNE_REFERENCE" %}
+                            —
+                        {% else %}
+                            {{ row.impact }}/15
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if row.status == "ANCIENNE_REFERENCE" %}
+                            —
+                        {% else %}
+                            {{ row.coherence }}/20
+                        {% endif %}
+                    </td>
+
+                    <td>
+
+                        <!-- Niveau de qualité : dépend uniquement du score -->
+                        <span class="status-badge {{ row.level_class }}">
+                            {{ row.level }}
+                        </span>
+
+                        <!-- Ancienne référence : hors périmètre -->
+                        {% if row.status == "ANCIENNE_REFERENCE" %}
+                        <span
+                            class="status-badge status-neutral"
+                            title="Ticket hors périmètre : ancienne référence non évaluée."
+                        >
+                            Ancienne référence
+                        </span>
+
+                        <!-- Description absente : priorité et rouge -->
+                        {% elif row.status == "DESCRIPTION_ABSENTE" %}
+                        <span
+                            class="status-badge status-danger"
+                            title="Aucune description exploitable n'a été trouvée pour ce ticket."
+                        >
+                            Description absente
+                        </span>
+
+                        <!-- Analyse de secours sans LLM -->
+                        {% elif row.methode == "heuristique" %}
+                        <span
+                            class="status-badge status-warning"
+                            title="Le LLM était indisponible : analyse calculée avec les règles heuristiques."
+                        >
+                            ⚙ Heuristique
+                        </span>
+
+                        <!-- Analyse LLM -->
+                        {% elif row.methode == "llm" %}
+                        <span
+                            class="status-badge status-success"
+                            title="Évaluation réalisée par analyse sémantique LLM."
+                        >
+                            ✓ LLM
+                        </span>
+                        {% endif %}
+
+                        <!-- Information indépendante : texte du parent utilisé -->
+                        {% if row.source_description == "parent" %}
+                        <span
+                            class="status-badge status-warning"
+                            title="Ce ticket ne possède pas de description propre : le texte du ticket parent a été utilisé pour l'évaluation."
+                        >
+                            ↳ Description parent
+                        </span>
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td
+                        colspan="10"
+                        style="text-align:center;padding:50px;"
+                    >
+                        Aucun ticket ne correspond aux filtres.
+                    </td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        </div>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+
+        <div class="pagination-info">
+            Affichage de {{ page_start }} à {{ page_end }}
+            sur {{ total_results }} tickets
+        </div>
+
+        <div class="pagination-actions">
+
+            {% if page > 1 %}
+            <a
+                class="pagination-btn"
+                href="{{ url_for(
+                    'dashboard',
+                    search=search,
+                    level=level,
+                    status=status,
+                    year=year,
+                    etat=etat,
+                    page=page - 1
+                ) }}"
+            >
+                ← Précédent
+            </a>
+            {% else %}
+            <span class="pagination-btn disabled">
+                ← Précédent
+            </span>
+            {% endif %}
+
+            <form method="get" class="pagination-jump">
+                <span>Page</span>
+                <input
+                    type="number"
+                    name="page"
+                    min="1"
+                    max="{{ total_pages }}"
+                    value="{{ page }}"
+                    class="pagination-input"
+                    onchange="this.form.submit()"
+                >
+                <span>/ {{ total_pages }}</span>
+
+                <input type="hidden" name="search" value="{{ search }}">
+                <input type="hidden" name="level" value="{{ level }}">
+                <input type="hidden" name="status" value="{{ status }}">
+                <input type="hidden" name="year" value="{{ year }}">
+                <input type="hidden" name="etat" value="{{ etat }}">
+
+                <button type="submit" class="pagination-go-btn">Aller</button>
+            </form>
+
+            {% if page < total_pages %}
+            <a
+                class="pagination-btn"
+                href="{{ url_for(
+                    'dashboard',
+                    search=search,
+                    level=level,
+                    status=status,
+                    year=year,
+                    etat=etat,
+                    page=page + 1
+                ) }}"
+            >
+                Suivant →
+            </a>
+            {% else %}
+            <span class="pagination-btn disabled">
+                Suivant →
+            </span>
+            {% endif %}
+
+        </div>
+
+    </div>
+    {% endif %}
+    <a
+    href="{{ url_for('export_dashboard_pdf', search=search, level=level, status=status, year=year, etat=etat) }}"
+    class="btn"
+    style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+    📄 Exporter le rapport de ces tickets
+    </a>
+
+</div>
+
+{% endblock %}
