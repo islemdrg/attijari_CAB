@@ -156,12 +156,6 @@ python -m pytest tests -v
 
 La suite couvre le calcul des échéances (délais, classification des statuts, cas limites), le moteur de notation (barème, complétude, cohérence des dates, résolution description/parent), et les routes principales de l'application.
 
-## Qualité de code
-
-Un script d'audit statique (`audit_qualite_code.py`) permet de détecter les lignes excessives, blocs de commentaires trop longs, fonctions surdimensionnées, imports inutilisés et duplications de code avant chaque livraison :
-
-```bash
-python audit_qualite_code.py web_app.py quality/score_engine.py cab_pipeline.py report_pdf.py
 ```
 
 ## Auteur
